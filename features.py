@@ -9,6 +9,7 @@ import transformations
 
 ## Helper functions ############################################################
 
+
 def inbounds(shape, indices):
     '''
         Input:
@@ -87,10 +88,30 @@ class HarrisKeypointDetector(KeypointDetector):
         orientationImage = np.zeros(srcImage.shape[:2])
 
         # TODO 1: Compute the harris corner strength for 'srcImage' at
-        # each pixel and store in 'harrisImage'. Also compute an 
+        # each pixel and store in 'harrisImage'. Also compute an
         # orientation for each pixel and store it in 'orientationImage.'
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+        Ix = ndimage.sobel(srcImage, axis=0, mode="nearest")
+        Iy = ndimage.sobel(srcImage, axis=1, mode="nearest")
+        Ix2 = Ix * Ix
+        Iy2 = Iy * Iy
+        Ixy = Ix * Iy
+        WIx2 = ndimage.gaussian_filter(
+            Ix2, 0.5, mode='nearest', truncate=3)
+        WIy2 = ndimage.gaussian_filter(
+            Iy2, 0.5, mode='nearest', truncate=3)
+        WIxy = ndimage.gaussian_filter(
+            Ixy, 0.5, mode='nearest', truncate=3)
+        for row in range(height):
+            for col in range(width):
+                a = WIx2[row][col]
+                b = WIxy[row][col]
+                c = WIxy[row][col]
+                d = WIy2[row][col]
+                det = (a * d) - (b * c)
+                trace = a + d
+                harrisImage[row][col] = det - 0.1 * (trace**2)
+        orientationImage = np.degrees(np.arctan2(Ix, Iy))
         # TODO-BLOCK-END
 
         return harrisImage, orientationImage
@@ -110,7 +131,8 @@ class HarrisKeypointDetector(KeypointDetector):
 
         # TODO 2: Compute the local maxima image
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+        maxes = ndimage.maximum_filter(harrisImage, 7, mode='nearest')
+        destImage = np.equal(harrisImage, maxes)
         # TODO-BLOCK-END
 
         return destImage
@@ -238,9 +260,9 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             transMx = np.zeros((2, 3))
 
             # TODO 5: Compute the transform as described by the feature
-            # location/orientation and store in 'transMx.' You will need 
-            # to compute the transform from each pixel in the 40x40 rotated 
-            # window surrounding the feature to the appropriate pixels in 
+            # location/orientation and store in 'transMx.' You will need
+            # to compute the transform from each pixel in the 40x40 rotated
+            # window surrounding the feature to the appropriate pixels in
             # the 8x8 feature descriptor image. 'transformations.py' has
             # helper functions that might be useful
             # Note: use grayImage to compute features on, not the input image
@@ -251,10 +273,10 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             # Call the warp affine function to do the mapping
             # It expects a 2x3 matrix
             destImage = cv2.warpAffine(grayImage, transMx,
-                (windowSize, windowSize), flags=cv2.INTER_LINEAR)
+                                       (windowSize, windowSize), flags=cv2.INTER_LINEAR)
 
-            # TODO 6: Normalize the descriptor to have zero mean and unit 
-            # variance. If the variance is negligibly small (which we 
+            # TODO 6: Normalize the descriptor to have zero mean and unit
+            # variance. If the variance is negligibly small (which we
             # define as less than 1e-10) then set the descriptor
             # vector to zero. Lastly, write the vector to desc.
             # TODO-BLOCK-BEGIN
@@ -314,7 +336,7 @@ class FeatureMatcher(object):
         d = h[6]*x + h[7]*y + h[8]
 
         return np.array([(h[0]*x + h[1]*y + h[2]) / d,
-            (h[3]*x + h[4]*y + h[5]) / d])
+                         (h[3]*x + h[4]*y + h[5]) / d])
 
 
 class SSDFeatureMatcher(FeatureMatcher):
@@ -382,7 +404,7 @@ class RatioFeatureMatcher(FeatureMatcher):
         # TODO 8: Perform ratio feature matching.
         # This uses the ratio of the SSD distance of the two best matches
         # and matches a feature in the first image with the closest feature in the
-        # second image. If the SSD distance is negligibly small, in this case less 
+        # second image. If the SSD distance is negligibly small, in this case less
         # than 1e-5, then set the distance to 1. If there are less than two features,
         # set the distance to 0.
         # Note: multiple features from the first image may match the same
