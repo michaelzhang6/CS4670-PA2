@@ -179,7 +179,10 @@ class HarrisKeypointDetector(KeypointDetector):
                 # f.angle to the orientation in degrees and f.response to
                 # the Harris score
                 # TODO-BLOCK-BEGIN
-                raise Exception("TODO in features.py not implemented")
+                f.size = 10
+                f.pt = (x, y)
+                f.angle = orientationImage[y, x]
+                f.response = harrisImage[y, x]
                 # TODO-BLOCK-END
 
                 features.append(f)
@@ -222,6 +225,8 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
         grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         desc = np.zeros((len(keypoints), 5 * 5))
 
+        grayImage = np.pad(grayImage, 2, "constant")
+
         for i, f in enumerate(keypoints):
             x, y = int(f.pt[0]), int(f.pt[1])
 
@@ -230,7 +235,11 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
             # as a row-major vector. Treat pixels outside the image as zero.
             # Note: use grayImage to compute features on, not the input image
             # TODO-BLOCK-BEGIN
-            raise Exception("TODO in features.py not implemented")
+            #descriptor = np.empty(0)
+            # for row in range(-2, 3):
+            #     descriptor = np.append(descriptor, grayImage[y+2+row][x:x+5])
+            desc[i] = grayImage[y:y+5, x:x+5].flatten()
+
             # TODO-BLOCK-END
 
         return desc
@@ -267,7 +276,21 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             # helper functions that might be useful
             # Note: use grayImage to compute features on, not the input image
             # TODO-BLOCK-BEGIN
-            raise Exception("TODO in features.py not implemented")
+            x, y = int(f.pt[0]), int(f.pt[1])
+
+            t1 = transformations.get_trans_mx(
+                np.array([-x, -y, 0]))
+
+            r = transformations.get_rot_mx(0, 0, -np.radians(f.angle))
+
+            s = transformations.get_scale_mx(.2, .2, 1)
+
+            t2 = transformations.get_trans_mx(np.array([4, 4, 0]))
+
+            transformation_matrix = t2.dot(s).dot(r).dot(t1)
+
+            transMx[:, :2] = transformation_matrix[:2, :2]
+            transMx[:, 2] = transformation_matrix[:2, 3]
             # TODO-BLOCK-END
 
             # Call the warp affine function to do the mapping
@@ -280,9 +303,14 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             # define as less than 1e-10) then set the descriptor
             # vector to zero. Lastly, write the vector to desc.
             # TODO-BLOCK-BEGIN
-            raise Exception("TODO in features.py not implemented")
-            # TODO-BLOCK-END
+            mean = np.mean(destImage)
+            dev = np.std(destImage)
 
+            if (dev**2) < (1 * (10 ** -10)):
+                desc[i] = np.zeros((1, 64))
+            else:
+                desc[i] = (destImage.flatten() - mean) / dev
+            # TODO-BLOCK-END
         return desc
 
 
