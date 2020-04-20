@@ -398,7 +398,10 @@ class SSDFeatureMatcher(FeatureMatcher):
         # Note: multiple features from the first image may match the same
         # feature in the second image.
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+        distances = spatial.distance.cdist(desc1, desc2, 'sqeuclidean')
+        for i in range(desc1):
+            j = np.argmin(distances[i])
+            matches.append(cv2.DMatch(i, j, distances[i][j]))
         # TODO-BLOCK-END
 
         return matches
@@ -438,7 +441,19 @@ class RatioFeatureMatcher(FeatureMatcher):
         # Note: multiple features from the first image may match the same
         # feature in the second image.
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+        distances = spatial.distance.cdist(desc1, desc2, 'sqeuclidean')
+        for i in range(desc1):
+            j = np.argmin(distances[i])  # index of first closest
+            if len(distances[i]) < 2:
+                matches.append(cv2.DMatch(i, j, 0))
+            else:
+                idx = np.argpartition(distances[i], 1)
+                k = idx[1]  # index of second closest
+                ratio = distances[j] / distances[k]
+                if ratio < (1 * 10 ** -5):
+                    matches.append(cv2.DMatch(i, j, 1))
+                else:
+                    matches.append(cv2.DMatch(i, j, ratio))
         # TODO-BLOCK-END
 
         return matches
