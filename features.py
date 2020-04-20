@@ -14,10 +14,10 @@ def inbounds(shape, indices):
     '''
         Input:
             shape -- int tuple containing the shape of the array
-            indices -- int list containing the indices we are trying 
+            indices -- int list containing the indices we are trying
                        to access within the array
         Output:
-            True/False, depending on whether the indices are within the bounds of 
+            True/False, depending on whether the indices are within the bounds of
             the array with the given shape
     '''
     assert len(shape) == len(indices)
@@ -399,7 +399,7 @@ class SSDFeatureMatcher(FeatureMatcher):
         # feature in the second image.
         # TODO-BLOCK-BEGIN
         distances = spatial.distance.cdist(desc1, desc2, 'sqeuclidean')
-        for i in range(desc1):
+        for i in range(desc1.shape[0]):
             j = np.argmin(distances[i])
             matches.append(cv2.DMatch(i, j, distances[i][j]))
         # TODO-BLOCK-END
@@ -442,14 +442,14 @@ class RatioFeatureMatcher(FeatureMatcher):
         # feature in the second image.
         # TODO-BLOCK-BEGIN
         distances = spatial.distance.cdist(desc1, desc2, 'sqeuclidean')
-        for i in range(desc1):
+        for i in range(desc1.shape[0]):
             j = np.argmin(distances[i])  # index of first closest
             if len(distances[i]) < 2:
                 matches.append(cv2.DMatch(i, j, 0))
             else:
                 idx = np.argpartition(distances[i], 1)
                 k = idx[1]  # index of second closest
-                ratio = distances[j] / distances[k]
+                ratio = distances[i][j] / distances[i][k]
                 if ratio < (1 * 10 ** -5):
                     matches.append(cv2.DMatch(i, j, 1))
                 else:
